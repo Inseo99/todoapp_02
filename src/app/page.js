@@ -1,30 +1,42 @@
 'use client';
 
 import * as React from 'react';
-import { AppBar, Toolbar, Button, Alert as MuiAlert, TextField } from '@mui/material';
+import {
+  AppBar,
+  Toolbar,
+  Button,
+  Alert as MuiAlert,
+  TextField,
+  CssBaseline,
+  Chip,
+  Drawer,
+  Box,
+} from '@mui/material';
 import { ThemeProvider } from '@emotion/react';
-import { FaBars } from 'react-icons/fa';
-import theme from './theme';
+import classNames from 'classnames';
+import { FaBars, FaCheck, FaEllipsisV } from 'react-icons/fa';
+import dateToStr from './dateUtil';
+import RootTheme from './theme';
 
-const useTodoStatus = () => {
+function useTodoStatus() {
   const [todos, setTodos] = React.useState([]);
   const lastTodoIdRef = React.useRef(0);
 
-  const addTodo = (newTitle) => {
+  const addTodo = (newContent) => {
     const id = ++lastTodoIdRef.current;
     const newTodo = {
       id,
-      title: newTitle,
+      content: newContent,
       regDate: dateToStr(new Date()),
     };
-    setTodos([...todos, newTodo]);
+    setTodos((todos) => [newTodo, ...todos]);
   };
   const removeTodo = (id) => {
     const newTodos = todos.filter((todo) => todo.id != id);
     setTodos(newTodos);
   };
-  const modifyTodo = (id, title) => {
-    const newTodos = todos.map((todo) => (todo.id != id ? todo : { ...todo, title }));
+  const modifyTodo = (id, content) => {
+    const newTodos = todos.map((todo) => (todo.id != id ? todo : { ...todo, content }));
     setTodos(newTodos);
   };
   return {
@@ -33,173 +45,140 @@ const useTodoStatus = () => {
     removeTodo,
     modifyTodo,
   };
-};
+}
 
-const NewTodoForm = ({ todoStatus }) => {
-  const [newTodoTitle, setNewTodoTitle] = useState('');
-  const addTodo = () => {
-    if (newTodoTitle.trim().length == 0) return;
-    const title = newTodoTitle.trim();
-    todoStatusaddTodo(title);
-    setNewTodoTitle('');
-  };
-  return (
-    <>
-      <div className="flex items-center gap-x-3">
-        <input
-          className="input input-bordered"
-          type="text"
-          placeholder="새 할일 입력해"
-          value={newTodoTitle}
-          onChange={(e) => setNewTodoTitle(e.target.value)}
-        />
-        <button className="btn btn-primary" onClick={addTodo}>
-          할 일 추가
-        </button>
-      </div>
-    </>
-  );
-};
-const TodoListItem = ({ todo, todoStatus }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [newTodoTitle, setNewTodoTitle] = useState(todo.title);
-  const readMode = !editMode;
-  const enableEditMode = () => {
-    setEditMode(true);
-  };
-  const removeTodo = () => {
-    todoStatus.removeTodo(todo.id);
-  };
-  const cancleEdit = () => {
-    setEditMode(false);
-    setNewTodoTitle(todo.title);
-  };
-  const commitEdit = () => {
-    if (newTodoTitle.trim().length == 0) return;
-    todoStatus.modifyTodo(todo.id, newTodoTitle.trim());
-    setEditMode(false);
-  };
-  return (
-    <li className="flex items-center gap-x-3 mb-3">
-      <span className="badge badge-accent badge-outline">{todo.id}</span>
-      {readMode ? (
-        <>
-          <span>{todo.title}</span>
-          <button className="btn btn-outline btn-accent" onClick={enableEditMode}>
-            수정
-          </button>
-          <button className="btn btn-accent" onClick={removeTodo}>
-            삭제
-          </button>
-        </>
-      ) : (
-        <>
-          <input
-            className="input input-bordered"
-            type="text"
-            placeholder="할 일 써"
-            value={newTodoTitle}
-            onChange={(e) => setNewTodoTitle(e.target.value)}
-          />
-          <button className="btn btn-accent" onClick={commitEdit}>
-            수정완료
-          </button>
-          <button className="btn btn-accent" onClick={cancleEdit}>
-            수정취소
-          </button>
-        </>
-      )}
-    </li>
-  );
-};
-const TodoList = ({ todoStatus }) => {
-  return (
-    <>
-      {todoStatus.todos.length == 0 ? (
-        <h4>할 일 없음</h4>
-      ) : (
-        <>
-          <h4>할 일 목록</h4>
-          <ul>
-            {todoStatus.todos.map((todo) => (
-              <TodoListItem key={todo.id} todo={todo} todoStatus={todoStatus} />
-            ))}
-          </ul>
-        </>
-      )}
-    </>
-  );
-};
-
-export default function App() {
-  const todoState = useTodoStatus(); // 커스텀 훅
-
+const NewTodoForm = ({ todosState }) => {
   const onSubmit = (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-    form.title.value = form.title.value.trim();
-    if (form.title.value.length == 0) {
+    form.content.value = form.content.value.trim();
+    if (form.content.value.length == 0) {
       alert('할 일 써');
-      form.title.focus();
+      form.content.focus();
       return;
     }
-    todoState.addTodo(form.title.value);
-    form.title.value = '';
-    form.title.focus();
+    todosState.addTodo(form.content.value);
+    form.content.value = '';
+    form.content.focus();
   };
 
   return (
     <>
-      <ThemeProvider theme={theme}>
-        <AppBar position="fixed">
-          <Toolbar>
-            <div className="tw-flex-1">
-              <FaBars onClick={() => setOpen(true)} className="tw-cursor-pointer" />
+      <form className="tw-flex tw-flex-col tw-p-4 tw-gap-2" onSubmit={(e) => onSubmit(e)}>
+        <TextField
+          multiline
+          maxRows={4}
+          name="content"
+          id="outlined-basic"
+          label="할 일 입력"
+          variant="outlined"
+          autoComplete="off"
+        />
+        <Button className="tw-text-bold" variant="contained" type="submit">
+          추가
+        </Button>
+      </form>
+    </>
+  );
+};
+const TodoListItem = ({ todo, index }) => {
+  return (
+    <>
+      <li className="tw-mb-3" key={todo.id}>
+        <div className="tw-flex tw-flex-col tw-gap-2 tw-mt-3">
+          <div className="tw-flex tw-gap-x-2 tw-font-bold">
+            <Chip className="tw-pt-[3px]" label={`번호 : ${todo.id}`} variant="outlined" />
+            <Chip
+              className="tw-pt-[3px]"
+              label={`날짜 : ${todo.regDate}`}
+              variant="outlined"
+              color="primary"
+            />
+          </div>
+          <div className="tw-rounded-[10px] tw-shadow tw-flex tw-text-[14px] tw-min-h-[80px]">
+            <Button className="tw-flex-shrink-0 tw-rounded-[10px_0_0_10px]" color="inherit">
+              <FaCheck
+                className={classNames(
+                  'tw-text-3xl',
+                  {
+                    'tw-text-[--mui-color-primary-main]': index % 2 == 0,
+                  },
+                  { 'tw-text-[#dcdcdc]': index % 2 != 0 },
+                )}
+              />
+            </Button>
+            <div className="tw-bg-[#dcdcdc] tw-w-[2px] tw-h-[60px] tw-self-center"></div>
+            <div className="tw-bg-blue-300 tw-flex tw-items-center tw-p-3 tw-flex-grow hover:tw-text-[--mui-color-primary-main] tw-whitespace-pre-wrap tw-leading-relaxed tw-break-words">
+              할 일 : {todo.content}
             </div>
-            <div className="logo-box">
-              <a href="/" className="tw-font-bold">
-                로고
-              </a>
-            </div>
-            <div className="tw-flex-1 tw-flex tw-justify-end">글쓰기</div>
-          </Toolbar>
-        </AppBar>
-        <Toolbar />
-        <form className="tw-flex tw-flex-col tw-p-4 tw-gap-3" onSubmit={onSubmit}>
-          <TextField
-            id="outlined-basic"
-            label="할 일 뭐임?"
-            variant="outlined"
-            autoComplete="off"
-          />
-          <Button variant="contained" type="submit">
-            추가
-          </Button>
-        </form>
-        {todoState.todos.length}
-        {/* {todoState.todos} */}
-      </ThemeProvider>
+            <Button className="tw-flex-shrink-0 tw-rounded-[0_10px_10px_0]" color="inherit">
+              <FaEllipsisV className="tw-text-[#dcdcdc] tw-text-2xl" />
+            </Button>
+          </div>
+        </div>
+      </li>
+    </>
+  );
+};
+const TodoList = ({ todosState }) => {
+  return (
+    <>
+      <Drawer anchor="{bottom}" open={false} onClose={() => {}}>
+        <div className="tw-p-[30px] tw-flex tw-gap-x-[5px]">
+          <div>수정</div>
+          <div>삭제</div>
+        </div>
+      </Drawer>
+      <div className="tw-mb-2">할 일 갯수 : {todosState.todos.length}</div>
+      <nav>
+        <ul>
+          {todosState.todos.map((todo, index) => (
+            <TodoListItem key={todo.id} todo={todo} index={index} />
+          ))}
+        </ul>
+      </nav>
+    </>
+  );
+};
+
+function App() {
+  const todosState = useTodoStatus(); // 커스텀 훅
+
+  React.useEffect(() => {
+    todosState.addTodo('스쿼트');
+    todosState.addTodo('벤치프레스');
+    todosState.addTodo('데드리프트\n런지');
+  }, []);
+
+  return (
+    <>
+      <AppBar position="fixed">
+        <Toolbar>
+          <div className="tw-flex-1">
+            <FaBars onClick={() => setOpen(true)} className="tw-cursor-pointer" />
+          </div>
+          <div className="logo-box">
+            <a href="/" className="tw-font-bold">
+              로고
+            </a>
+          </div>
+          <div className="tw-flex-1 tw-flex tw-justify-end">글쓰기</div>
+        </Toolbar>
+      </AppBar>
+      <Toolbar />
+      <NewTodoForm todosState={todosState} />
+      <TodoList todosState={todosState} />
     </>
   );
 }
 
-// Util
-// 날짜 객체를 인자로 받아서 문장으로 반환해주는 함수 (yyyy-MM-dd hh:mm:ss)
-function dateToStr(d) {
-  const pad = (n) => {
-    return n < 10 ? '0' + n : n;
-  };
+export default function themeApp() {
+  const theme = RootTheme();
+
   return (
-    d.getFullYear() +
-    '-' +
-    pad(d.getMonth() + 1) +
-    '-' +
-    pad(d.getDate()) +
-    ' ' +
-    pad(d.getHours()) +
-    ':' +
-    pad(d.getMinutes()) +
-    ':' +
-    pad(d.getSeconds())
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <App />
+    </ThemeProvider>
   );
 }
