@@ -1,13 +1,51 @@
 import { createTheme } from '@mui/material';
-const theme = createTheme({
-  palette: {
-    type: 'light',
-    primary: {
-      main: '#f50057',
+import * as React from 'react';
+
+const muiThemePaletteKeys = [
+  'background',
+  'error',
+  'info',
+  'primary',
+  'secondary',
+  'success',
+  'text',
+  'warning',
+];
+
+export default function RootTheme() {
+  const theme = createTheme({
+    typography: {
+      fontFamily: 'GmarketSansMedium',
     },
-    secondary: {
-      main: '#f44336',
+    palette: {
+      type: 'light',
+      primary: {
+        main: '#3f51b5',
+      },
+      secondary: {
+        main: '#f50057',
+      },
+      background: {
+        default: '#fff',
+        paper: '#fff',
+      },
     },
-  },
-});
-export default theme;
+  });
+
+  React.useEffect(() => {
+    const r = document.querySelector(':root');
+    muiThemePaletteKeys.forEach((paletteKey) => {
+      const themeColorObj = theme.palette[paletteKey];
+      // console.log(themeColor);
+      for (const key in themeColorObj) {
+        // console.log(key);
+        if (Object.hasOwnProperty.call(themeColorObj, key)) {
+          const colorVal = themeColorObj[key];
+          r.style.setProperty(`--mui-color-${paletteKey}-${key}`, colorVal);
+        }
+      }
+    });
+  }, []);
+
+  return theme;
+}
