@@ -10,6 +10,10 @@ import {
   CssBaseline,
   Chip,
   Drawer,
+  SwipeableDrawer,
+  List,
+  ListItem,
+  Divider,
   Box,
 } from '@mui/material';
 import { ThemeProvider } from '@emotion/react';
@@ -141,23 +145,33 @@ function useTodoOptionDrawerStatus() {
   };
 }
 
+function TodoOptionDrawer({ status }) {
+  return (
+    <>
+      <SwipeableDrawer anchor="left" open={status.opened} onClose={status.close}>
+        <List>
+          <ListItem className="tw-flex tw-gap-2 tw-p-[15px]">
+            <span className="tw-text-[--mui-color-primary-main]">{status.todoId}번 </span>
+            <span>Your Todo</span>
+          </ListItem>
+          <Divider className="tw-my-[5px]" />
+          <ListItem className="tw-p-[15px_20px]">수정</ListItem>
+          <ListItem className="tw-p-[15px_20px]">삭제</ListItem>
+        </List>
+      </SwipeableDrawer>
+    </>
+  );
+}
+
 const TodoList = ({ todosState }) => {
   const todoOptionDrawerStatus = useTodoOptionDrawerStatus();
 
   return (
     <>
-      <Drawer
-        anchor="bottom"
-        open={todoOptionDrawerStatus.opened}
-        onClose={todoOptionDrawerStatus.close}>
-        <div className="tw-p-[30px] tw-flex tw-gap-x-[5px]">
-          {todoOptionDrawerStatus.todoId}번 todo에 대한 옵션 Drawer
-          <div>수정</div>
-          <div>삭제</div>
-        </div>
-      </Drawer>
-      <div className="tw-mb-2">할 일 갯수 : {todosState.todos.length}</div>
+      <TodoOptionDrawer status={todoOptionDrawerStatus} />
+
       <nav>
+        할 일 갯수 : {todosState.todos.length}
         <ul>
           {todosState.todos.map((todo, index) => (
             <TodoListItem
